@@ -20,6 +20,12 @@
     "default_popup": "popup.html",
     "default_title": "Check to see if the mail is phishing"
     },
+
+    "content_scripts": [{
+        "matches": ["<all_urls>"],
+        "js": ["js/content.js"],
+        "run_at": "document_end"
+    }],
     
     "icons": {
         "24": "images/img24.png",
