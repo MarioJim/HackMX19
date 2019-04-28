@@ -1,3 +1,3 @@
-chrome.runtime.onInstalled.addListener(function() {
-    //alert('Now you are protected of phishing');
+chrome.runtime.onInstalled.addListener(() => {
+  // alert('Now you are protected of phishing');
 });
