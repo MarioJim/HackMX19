@@ -10,7 +10,8 @@
         "persistent": false
     },
     "permissions": [
-        "tabs"
+        "tabs",
+        "https://openphish.com/feed.txt"
     ],
     "browser_action": {
         "default_icon": {

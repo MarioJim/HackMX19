@@ -1,3 +1,10 @@
+const isInAPhishingList = async url => {
+  const data = await fetch('https://openphish.com/feed.txt');
+  const text = await data.text();
+  const phishingWebsites = text.split('\n');
+  if (phishingWebsites.includes(url)) alert('This website has been reported as a phishing website');
+};
+
 const usesIPAddress = url => {
   const regex1 = /\d{1-3}\.\d{1-3}\.\d{1-3}\.\d{1-3}/;
   const regex2 = /0x[A-F0-9][A-F0-9]?\.0x[A-F0-9][A-F0-9]?\.0x[A-F0-9][A-F0-9]?\.0x[A-F0-9][A-F0-9]?/;
@@ -45,14 +52,15 @@ function results(url) {
   if (lastOccurenceOfDoubleSlashes(url)) result += 'URL redirects to link after //\n';
   if (hasDashInDomain(url)) result += 'Dashes are rarely used in legitimate URLs\n';
   if (isntHTTPS(url)) result += "URL doesn't use https\n";
-  if (result.length == 0) result = 'This URL passes all checks\n';
+  if (result.length === 0) result = 'This URL passes all checks\n';
   return result;
 }
 
 document.addEventListener(`DOMContentLoaded`, event => {
   document.getElementById('evaluate-button').addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      chrome.tabs.get(tabs[0].id, tab => {
+      chrome.tabs.get(tabs[0].id, async tab => {
+        await isInAPhishingList(tab.url);
         alert(results(tab.url));
       });
     });
