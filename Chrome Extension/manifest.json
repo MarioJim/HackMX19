@@ -1,17 +1,12 @@
 {
-    "name": "Phishing Identifier",
-    "version": "0.1",
-    "description": "This extension tells you if an email is phishing.",
+    "name": "No Phishing Zone",
+    "version": "1.0",
+    "description": "This extension tells you if a website is or can be phishing.",
     "manifest_version": 2,
-    "background": {
-        "scripts": [
-            "js/background.js"
-        ],
-        "persistent": false
-    },
     "permissions": [
         "tabs",
-        "https://openphish.com/feed.txt"
+        "https://openphish.com/feed.txt",
+        "https://mxtoolbox.com/"
     ],
     "browser_action": {
         "default_icon": {
@@ -20,7 +15,7 @@
             "48": "images/img48.png"
         },
         "default_popup": "popup.html",
-        "default_title": "Check to see if the mail is phishing"
+        "default_title": "Check to see if a website is phishing"
     },
     "content_scripts": [
         {
