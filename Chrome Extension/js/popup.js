@@ -1,3 +1,27 @@
+const extractHostname = url => {
+  let hostname;
+  if (url.indexOf('//') > -1) hostname = url.split('/')[2];
+  else hostname = url.split('/')[0];
+  hostname = hostname.split(':')[0];
+  hostname = hostname.split('?')[0];
+  if (hostname.startsWith('www.')) hostname = hostname.slice(4);
+  return hostname;
+};
+
+const isANewWebsite = async url => {
+  const data = await fetch(
+    `https://hexillion.com/samples/WhoisXML/?query=${extractHostname(
+      url
+    )}&_accept=application%2Fvnd.hexillion.whois-v2%2Bjson`
+  );
+  const json = await data.json();
+  const createdDate = json.ServiceResult.QueryResult.WhoisRecord.CreatedDate;
+  const regDate = new Date(createdDate);
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  return regDate.getTime() > sixMonthsAgo.getTime();
+};
+
 const isInAPhishingList = async url => {
   const data = await fetch('https://openphish.com/feed.txt');
   const text = await data.text();
@@ -48,8 +72,10 @@ const isntHTTPS = url => {
   return !url.startsWith('https');
 };
 
-function results(url) {
+const results = async url => {
   const result = [];
+  if (await isANewWebsite(url))
+    result.push(document.createElement('p').appendChild(document.createTextNode('Website was recently registered')));
   if (usesIPAddress(url))
     result.push(document.createElement('p').appendChild(document.createTextNode('URL uses IP Address')));
   if (urlIsTooLong(url))
@@ -66,7 +92,7 @@ function results(url) {
   if (isntHTTPS(url))
     result.push(document.createElement('p').appendChild(document.createTextNode("URL doesn't use https")));
   return result;
-}
+};
 
 document.addEventListener(`DOMContentLoaded`, event => {
   document.getElementById('evaluate-button').addEventListener('click', () => {
@@ -74,7 +100,7 @@ document.addEventListener(`DOMContentLoaded`, event => {
       chrome.tabs.get(tabs[0].id, async tab => {
         document.getElementById('alerts').innerHTML = '';
         document.getElementById('alerts').appendChild(await isInAPhishingList(tab.url));
-        const res = results(tab.url);
+        const res = await results(tab.url);
         if (res.length > 0)
           document
             .getElementById('alerts')
