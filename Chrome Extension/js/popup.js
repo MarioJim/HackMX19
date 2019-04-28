@@ -65,8 +65,6 @@ function results(url) {
     );
   if (isntHTTPS(url))
     result.push(document.createElement('p').appendChild(document.createTextNode("URL doesn't use https")));
-  if (result.length === 0)
-    result.push(document.createElement('p').appendChild(document.createTextNode('This URL passes all checks')));
   return result;
 }
 
@@ -76,10 +74,17 @@ document.addEventListener(`DOMContentLoaded`, event => {
       chrome.tabs.get(tabs[0].id, async tab => {
         document.getElementById('alerts').innerHTML = '';
         document.getElementById('alerts').appendChild(await isInAPhishingList(tab.url));
-        document
-          .getElementById('alerts')
-          .appendChild(document.createElement('p').appendChild(document.createTextNode('Possible alerts:')));
         const res = results(tab.url);
+        if (res.length > 0)
+          document
+            .getElementById('alerts')
+            .appendChild(document.createElement('p').appendChild(document.createTextNode('Possible alerts:')));
+        else
+          document
+            .getElementById('alerts')
+            .appendChild(
+              document.createElement('p').appendChild(document.createTextNode('This URL passes all checks'))
+            );
         for (const r of res) {
           document.getElementById('alerts').appendChild(document.createElement('br'));
           document.getElementById('alerts').appendChild(r);
