@@ -1,8 +1,37 @@
+const extractHostname = url => {
+  let hostname;
+  if (url.indexOf('//') > -1) hostname = url.split('/')[2];
+  else hostname = url.split('/')[0];
+  hostname = hostname.split(':')[0];
+  hostname = hostname.split('?')[0];
+  if (hostname.startsWith('www.')) hostname = hostname.slice(4);
+  return hostname;
+};
+
+const isANewWebsite = async url => {
+  const data = await fetch(
+    `https://hexillion.com/samples/WhoisXML/?query=${extractHostname(
+      url
+    )}&_accept=application%2Fvnd.hexillion.whois-v2%2Bjson`
+  );
+  const json = await data.json();
+  const createdDate = json.ServiceResult.QueryResult.WhoisRecord.CreatedDate;
+  const regDate = new Date(createdDate);
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  return regDate.getTime() > sixMonthsAgo.getTime();
+};
+
 const isInAPhishingList = async url => {
   const data = await fetch('https://openphish.com/feed.txt');
   const text = await data.text();
   const phishingWebsites = text.split('\n');
-  if (phishingWebsites.includes(url)) alert('This website has been reported as a phishing website');
+  const result = document.createElement('p');
+  if (phishingWebsites.includes(url)) {
+    result.classList.add('important');
+    result.appendChild(document.createTextNode('This website has been reported as a phishing website'));
+  } else result.appendChild(document.createTextNode("This website hasn't been flagged as phishing"));
+  return result;
 };
 
 const usesIPAddress = url => {
@@ -31,7 +60,7 @@ const hasAt = url => {
 };
 
 const lastOccurenceOfDoubleSlashes = url => {
-  return url.lastIndexOf('//') > 6;
+  return url.lastIndexOf('//') > 6 && !url.startsWith('chrome');
 };
 
 const hasDashInDomain = url => {
@@ -43,25 +72,49 @@ const isntHTTPS = url => {
   return !url.startsWith('https');
 };
 
-function results(url) {
-  let result = '';
-  if (usesIPAddress(url)) result += 'URL uses IP Address\n';
-  if (urlIsTooLong(url)) result += 'URL is too long\n';
-  if (shortenedUrl(url)) result += 'URL is shortened\n';
-  if (hasAt(url)) result += 'URL has an @\n';
-  if (lastOccurenceOfDoubleSlashes(url)) result += 'URL redirects to link after //\n';
-  if (hasDashInDomain(url)) result += 'Dashes are rarely used in legitimate URLs\n';
-  if (isntHTTPS(url)) result += "URL doesn't use https\n";
-  if (result.length === 0) result = 'This URL passes all checks\n';
+const results = async url => {
+  const result = [];
+  if (await isANewWebsite(url))
+    result.push(document.createElement('p').appendChild(document.createTextNode('Website was recently registered')));
+  if (usesIPAddress(url))
+    result.push(document.createElement('p').appendChild(document.createTextNode('URL uses IP Address')));
+  if (urlIsTooLong(url))
+    result.push(document.createElement('p').appendChild(document.createTextNode('URL is too long')));
+  if (shortenedUrl(url))
+    result.push(document.createElement('p').appendChild(document.createTextNode('URL is shortened')));
+  if (hasAt(url)) result.push(document.createElement('p').appendChild(document.createTextNode('URL has an @')));
+  if (lastOccurenceOfDoubleSlashes(url))
+    result.push(document.createElement('p').appendChild(document.createTextNode('URL redirects to link after //')));
+  if (hasDashInDomain(url))
+    result.push(
+      document.createElement('p').appendChild(document.createTextNode('Dashes are rarely used in legitimate URLs'))
+    );
+  if (isntHTTPS(url))
+    result.push(document.createElement('p').appendChild(document.createTextNode("URL doesn't use https")));
   return result;
-}
+};
 
 document.addEventListener(`DOMContentLoaded`, event => {
   document.getElementById('evaluate-button').addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
       chrome.tabs.get(tabs[0].id, async tab => {
-        await isInAPhishingList(tab.url);
-        alert(results(tab.url));
+        document.getElementById('alerts').innerHTML = '';
+        document.getElementById('alerts').appendChild(await isInAPhishingList(tab.url));
+        const res = await results(tab.url);
+        if (res.length > 0)
+          document
+            .getElementById('alerts')
+            .appendChild(document.createElement('p').appendChild(document.createTextNode('Possible alerts:')));
+        else
+          document
+            .getElementById('alerts')
+            .appendChild(
+              document.createElement('p').appendChild(document.createTextNode('This URL passes all checks'))
+            );
+        for (const r of res) {
+          document.getElementById('alerts').appendChild(document.createElement('br'));
+          document.getElementById('alerts').appendChild(r);
+        }
       });
     });
   });
